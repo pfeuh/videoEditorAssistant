@@ -209,20 +209,20 @@ if __name__ == "__main__":
     ATARI_BLUE = (0x49, 0x92, 0xB9, 0xff)
     ATARI_WHITE = (0xe0, 0xe0, 0xe0, 0xff)
 
-    sheet = SHEET(bg=SHEET.TRANSPARENT, fg=ATARI_WHITE)
+    console = CONSOLE()
+    counter = COUNTER()
     font = FONT("./font/font_arex")
-    sheet.setOrigin(200,200)
-    sheet.initConsole(font=font)
+
+    for car in "Pfeuh proundly presents\n\nFUSEE INTERPLANETAIRE":
+        sheet = SHEET(bg=SHEET.TRANSPARENT, fg=ATARI_WHITE, console = console)
+        sheet.initConsole(font=font)
+        sheet.write(car)
+        sheet.drawText()
+        for x in range(5):
+            sheet.save("./in/test_%04d.png"%counter.get())
     
+    picToVideo("./in/test_%04d.png", "./out/text.mp4")
     
-    for line_num in range(24):
-        #~ sheet.write("%c"%(randrange(128)))
-        sheet.write("LINE #%02d OBLADI OBLADA ABRACADABRA GUET!"%(line_num + 1))
-    sheet.write(    "LINE #%02d STOPPEDOBLADA ABRACADABRA GUET"%(line_num + 2))
-    
-    sheet.drawText()
-    
-    sheet.show()
     
     
     
