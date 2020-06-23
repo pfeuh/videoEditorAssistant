@@ -1,2 +1,2 @@
 # videoEditorAssistant
-video masks generator for picture/video
+Masks/titles generator for picture/video
