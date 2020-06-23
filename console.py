@@ -24,9 +24,8 @@ class CONSOLE():
     def getRows(self):
         return self.__rows
 
-    def read(self, colnum, rownum):
-        position = colnum + rownum * self.__cols
-        return self.__console[position]
+    def read(self, position):
+        return ord(self.__console[position])
 
     def clearScreen(self):
         self.__console = [CHAR_SPACE] * self.__cols * self.__rows

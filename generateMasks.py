@@ -92,7 +92,6 @@ def createNikonViewerMask():
     sheet.putBitmap(sheet.getWidth() / 2, 28, Image.open("./ressource/nikonAperture.png"), SHEET.WHITE)
     
     sheet.save(frm_name)
-    sheet.show()
 
 if __name__ == "__main__":
     

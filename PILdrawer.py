@@ -9,8 +9,9 @@ import subprocess
 
 INPUT_DIR = "./in/"
 OUTPUT_DIR = "./out/"
-FRM_EXT = ".PNG"
+FRM_EXT = ".png"
 VIDEO_EXT = ".mp4"
+NB_GLYPHES = 128
 
 #collecting arguments
 DEBUG = "-debug" in sys.argv
@@ -23,6 +24,9 @@ for argnum, arg in enumerate(sys.argv):
 if DEBUG:
     sys.stdout.write("debug mode active\n")
 
+def loadImage(fname):
+    return Image.open(fname)
+
 class SHEET():
     WIDTH = 1920
     HEIGHT = 1080
@@ -33,20 +37,52 @@ class SHEET():
     BLUE = (0, 0, 255, 255)
     TRANSPARENT = (0, 0, 0, 0)
 
-    def __init__(self, width=None, height=None, bg=None, fg=None, console=None):
+    def __init__(self, width=None, height=None, bg=None, fg=None, console=None,fname=None):
         if not width: width = SHEET.WIDTH
         if not height: height = SHEET.HEIGHT
         if not bg: bg = SHEET.TRANSPARENT
         if not fg: fg = SHEET.WHITE
-        if not console: console = CONSOLE()
-        self.__width = width
-        self.__height = height
         self.__bg = bg
         self.__fg = fg
-        self.__img = Image.new('RGBA', (self.__width, self.__height), self.__bg)
+        if fname != None:
+            self.__img = Image.open(fname)
+            self.__width = self.__img.size[0]
+            self.__height = self.__img.size[1]
+        else:
+            self.__width = width
+            self.__height = height
+            self.__img = Image.new('RGBA', (self.__width, self.__height), self.__bg)
+        if not console: console = CONSOLE()
+        self.__console = console
+        self.initConsole()
         self.__sheet = ImageDraw.Draw(self.__img)
+        # one can define a new origin for putXxxxx methods
         self.__x_origin = 0
         self.__y_origin = 0
+
+    def initConsole(self, x=0, y=0, font=None):
+        if font == None:
+            self.__font = FONT("./font/font_ascii8")
+        else:
+            self.__font = font
+        self.__glyphe_width = self.__font.getGlyphe(0).size[0]
+        self.__glyphe_height = self.__font.getGlyphe(0).size[1]
+        w = self.__glyphe_width * self.__console.getCols()
+        h = self.__glyphe_height * self.__console.getRows()
+        self.__x_console_offset = (self.getWidth() - w) /2
+        self.__y_console_offset = (self.getHeight() - h) /2
+
+    def write(self, text):
+        self.__console.write(text)
+
+    def clearScreen(self):
+        self.__console.clearScreen()
+
+    def gotoXY(self, x, y):
+        self.__console.gotoXY(x, y)
+
+    def getXY(self):
+        return self.__console.getXY()
 
     def getWidth(self):
         return self.__width
@@ -73,35 +109,53 @@ class SHEET():
     def save(self, fname):
         self.__img.save(fname, "PNG")
 
-    def drawEllipse(self, x1, y1, x2, y2, color, **kwds):
+    def drawEllipse(self, x1, y1, x2, y2, color=None, **kwds):
+        if color == None:color = self.__fg
         self.__sheet.ellipse([(x1, y1), (x2, y2)], fill=color, **kwds)
 
-    def putDisc(self, x, y, d, color, **kwds):
+    def putDisc(self, x, y, d, color=None, **kwds):
+        if color == None:color = self.__fg
         x, y, = self.__relocate(x, y)
         self.drawEllipse(x - d / 2, y - d / 2, x + d / 2, y + d / 2, color, **kwds)
 
-    def putCircle(self, x, y, d, color, **kwds):
+    def putCircle(self, x, y, d, color=None, **kwds):
+        if color == None:color = self.__fg
         x, y, = self.__relocate(x, y)
         self.__sheet.ellipse([(x - d / 2, y - d / 2), (x + d / 2, y + d / 2)], outline=color, fill=None, **kwds)
 
     def drawRectangle(self, x1, y1, x2, y2, color=None, **kwds):
-        if not color: color = self.__fg
+        if color == None:color = self.__fg
         self.__sheet.rectangle([(x1, y1,), (x2, y2,)], fill=color, **kwds)
 
-    def putRectangle(self, x, y, w, h, color, **kwds):
+    def putRectangle(self, x, y, w, h, color=None, **kwds):
+        if color == None:color = self.__fg
         x, y, = self.__relocate(x, y)
         self.drawRectangle(x- w /2, y - h / 2, x + w / 2, y + h / 2, color, **kwds)
         
-    def putText(self, x, y, text, color, **kwds):
+    def putText(self, x, y, text, color=None, **kwds):
+        if color == None:color = self.__fg
         x, y, = self.__relocate(x, y)
         self.__sheet.text((x, y), text, fill=color, align="center", **kwds)
 
     def putBitmap(self, x, y, bitmap, color=None, **kwds):
-        if not color: color = self.__fg
+        # as putGlyphe, but bitmap's anchor is center
+        if color == None:color = self.__fg
         x, y = self.__relocate(x, y)
         x -= bitmap.size[0] / 2
         y -= bitmap.size[1] / 2
         self.__sheet.bitmap((x, y), bitmap, fill=color, **kwds)
+
+    def putGlyphe(self, x, y, bitmap, color=None, **kwds):
+        # as putBitmap, but bitmap's anchor is top-left
+        if color == None:color = self.__fg
+        self.__sheet.bitmap((x, y), bitmap, fill=color, **kwds)
+
+    def drawText(self):
+        for index in range(self.__console.getRows() *self.__console.getCols()):
+            glyphe = self.__font.getGlyphe(self.__console.read(index))
+            x = index % self.__console.getCols() * self.__glyphe_width + self.__x_console_offset
+            y = index / self.__console.getCols() * self.__glyphe_height + self.__y_console_offset
+            self.putGlyphe(x, y, glyphe, color=None)
 
 class COUNTER:
     # for image(s) naming
@@ -115,6 +169,21 @@ class COUNTER:
     def reset(self):
         self.__counter = 0
 
+class FONT():
+    def __init__(self, fname):
+        self.__charset=[]
+        for index in range(NB_GLYPHES):
+            self.__charset.append(loadImage(fname + "/%03d.png"%index))
+    
+    def getGlyphe(self, index):
+        return self.__charset[index]
+
+    def getGlypheWidth(self):
+        return self.__charset[0].size[0]
+        
+    def getGlypheHeight(self):
+        return self.__charset[0].size[1]
+        
 def picToVideo(fname, vname):
     if DEBUG:
         sys.stdout.write("creating  video %s\n"%(vname))
@@ -133,33 +202,25 @@ def picToVideo(fname, vname):
     params.append(vname)
     subprocess.call(params)
 
-def loadSheet():
-    Image.open("./ressource/nikonSpeed.png")
-
-
-Image.open("./ressource/nikonSpeed.png")
-
 if __name__ == "__main__":
 
+    from random import randrange
+
     ATARI_BLUE = (0x49, 0x92, 0xB9, 0xff)
+    ATARI_WHITE = (0xe0, 0xe0, 0xe0, 0xff)
 
-    sheet = SHEET(bg=ATARI_BLUE)
-    sheet.putDisc(0, 0, 100, SHEET.RED)
-    sheet.setOrigin(sheet.getWidth()/2, sheet.getHeight()/2)
-    sheet.putDisc(0, 0, 100, SHEET.GREEN)
-    sheet.setOrigin(sheet.getWidth()-1, sheet.getHeight()-1)
-    sheet.putDisc(0, 0, 100, SHEET.BLUE)
-    sheet.setOrigin(0, 0)
-    
-    sheet.drawRectangle(100, 100, 200, 200, SHEET.RED)
-    
-    sheet.putBitmap(100, 100, Image.open("./ressource/nikonSpeed.png"), SHEET.WHITE)
-    sheet.putBitmap(200, 200, Image.open("./ressource/nikonSpeed.png"), SHEET.WHITE)
-    sheet.putBitmap(300, 300, Image.open("./ressource/nikonSpeed.png"), SHEET.WHITE)
-
+    sheet = SHEET(bg=SHEET.TRANSPARENT, fg=ATARI_WHITE)
+    font = FONT("./font/font_arex")
+    sheet.setOrigin(200,200)
+    sheet.initConsole(font=font)
     
     
+    for line_num in range(24):
+        #~ sheet.write("%c"%(randrange(128)))
+        sheet.write("LINE #%02d OBLADI OBLADA ABRACADABRA GUET!"%(line_num + 1))
+    sheet.write(    "LINE #%02d STOPPEDOBLADA ABRACADABRA GUET"%(line_num + 2))
     
+    sheet.drawText()
     
     sheet.show()
     

@@ -19,6 +19,13 @@ if __name__ == "__main__":
     
     test_01()
 
+    w = 40 * 8
+    h = 25 *8
+    for ratio in range(1, 11):
+        print ratio, w, h, w* ratio, h* ratio
+    
+    
+
 #~ sheet = SHEET(width=800, height = 640)
 
 #~ sheet.putDisc(0, 0, 100, SHEET.RED)
