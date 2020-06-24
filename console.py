@@ -103,7 +103,6 @@ class CONSOLE():
 if __name__ == "__main__":
     
     console = CONSOLE()
-    #~ console.write(open("./titrage.py", ("r")).read(-1)[:385])
     console.write("1234567890")
     print console.getXY()
     print console

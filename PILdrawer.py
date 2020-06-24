@@ -25,6 +25,12 @@ for argnum, arg in enumerate(sys.argv):
 if DEBUG:
     sys.stdout.write("debug mode active\n")
 
+def deleteInputBuffer(idir=INPUT_DIR):
+    for entry in os.listdir(idir):
+        filename = os.path.join(idir, entry)
+        if os.path.isfile(filename):
+            os.remove(filename)
+    
 def loadImage(fname):
     return Image.open(fname)
 
@@ -61,7 +67,7 @@ class SHEET():
         self.__x_origin = 0
         self.__y_origin = 0
 
-    def initConsole(self, x=0, y=0, font=None):
+    def initConsole(self, x=0, y=0, font=None, border=False):
         if font == None:
             self.__font = FONT("./font/font_ascii8")
         else:
@@ -72,6 +78,14 @@ class SHEET():
         h = self.__glyphe_height * self.__console.getRows()
         self.__x_console_offset = (self.getWidth() - w) /2
         self.__y_console_offset = (self.getHeight() - h) /2
+        if border:
+            coordinates = (
+                (0, 0 , self.__x_console_offset-1,  self.__height-1), #left border
+                (0, 0 , self.__width-1,  self.__y_console_offset-1), #top border
+                (self.__width -self.__x_console_offset, 0 , self.__width-1, self.__height-1), # right border
+                (0, self.__height-self.__y_console_offset , self.__width-1, self.__height-1 ))
+            for x1, y1, x2, y2 in coordinates:
+                self.drawRectangle(x1, y1, x2, y2, SHEET.BLACK)
 
     def write(self, text):
         self.__console.write(text)
@@ -140,7 +154,6 @@ class SHEET():
         self.__sheet.text((x, y), text, fill=color, align="center", **kwds)
 
     def putBitmap(self, x, y, bitmap, color=None, **kwds):
-        # as putGlyphe, but bitmap's anchor is center
         if color == None:color = self.__fg
         x, y = self.__relocate(x, y)
         x -= bitmap.size[0] / 2
@@ -148,16 +161,21 @@ class SHEET():
         self.__sheet.bitmap((x, y), bitmap, fill=color, **kwds)
 
     def putGlyphe(self, x, y, bitmap, color=None, **kwds):
-        # as putBitmap, but bitmap's anchor is top-left
         if color == None:color = self.__fg
+        x = x * self.__glyphe_width + self.__x_console_offset
+        y = y * self.__glyphe_height + self.__y_console_offset
         self.__sheet.bitmap((x, y), bitmap, fill=color, **kwds)
 
     def drawText(self):
         for index in range(self.__console.getRows() *self.__console.getCols()):
             glyphe = self.__font.getGlyphe(self.__console.read(index))
-            x = index % self.__console.getCols() * self.__glyphe_width + self.__x_console_offset
-            y = index / self.__console.getCols() * self.__glyphe_height + self.__y_console_offset
+            x = index % self.__console.getCols()
+            y = index / self.__console.getCols()
             self.putGlyphe(x, y, glyphe, color=None)
+
+    def addCursor(self, cursor):
+        x, y = self.getXY()
+        self.putGlyphe(x, y, cursor, color=None)
 
 class COUNTER:
     # for image(s) naming
@@ -170,7 +188,27 @@ class COUNTER:
 
     def reset(self):
         self.__counter = 0
+        
+    def getCurrentIndex(self):
+        return self.__counter
 
+class FNAME_GEN():
+    def __init__(self, pattern):
+        self.__pattern = pattern
+        self.__counter = COUNTER()
+        
+    def get(self):
+        return self.__pattern%self.__counter.get()
+        
+    def reset(self):
+        self.__counter.reset()
+    
+    def getPattern(self):
+        return self.__pattern
+
+    def getCurrentIndex(self):
+        return self.__counter.getCurrentIndex()
+    
 class FONT():
     def __init__(self, fname):
         fname = FONT_DIR + fname
@@ -211,23 +249,33 @@ def picToVideo(fname, vname):
 
 if __name__ == "__main__":
 
-    from random import randrange
+    pass
 
-    ATARI_BLUE = (0x49, 0x92, 0xB9, 0xff)
-    ATARI_WHITE = (0xe0, 0xe0, 0xe0, 0xff)
-
-    console = CONSOLE()
-    counter = COUNTER()
-    font = FONT("arex")
-
-    for car in "Pfeuh proundly presents\n\nFUSEE INTERPLANETAIRE":
-        sheet = SHEET(bg=ATARI_BLUE, fg=ATARI_WHITE, console = console)
-        sheet.initConsole(font=font)
-        sheet.write(car)
-        sheet.drawText()
-        sheet.save("./in/test_%04d.png"%counter.get())
-    
+    sheet = SHEET()
+    sheet.initConsole(border=True)
     sheet.show()
+
+
+
+    #~ deleteInputBuffer()
+
+    #~ from random import randrange
+
+    #~ ATARI_BLUE = (0x49, 0x92, 0xB9, 0xff)
+    #~ ATARI_WHITE = (0xe0, 0xe0, 0xe0, 0xff)
+
+    #~ console = CONSOLE()
+    #~ counter = COUNTER()
+    #~ font = FONT("arex")
+
+    #~ for car in "Pfeuh proundly presents\n\nFUSEE INTERPLANETAIRE":
+        #~ sheet = SHEET(bg=ATARI_BLUE, fg=ATARI_WHITE, console = console)
+        #~ sheet.initConsole(font=font)
+        #~ sheet.write(car)
+        #~ sheet.drawText()
+        #~ sheet.save("./in/test_%04d.png"%counter.get())
+    
+    #~ sheet.show()
     #~ picToVideo("./in/test_%04d.png", "./out/text.mp4")
     
     

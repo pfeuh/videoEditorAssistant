@@ -16,7 +16,7 @@ FONT_EXT = ".FNT"
 NB_CHARS = 128
 CHAR_WIDTH = 8
 CHAR_HEIGHT = 8
-CHAR_RATIO = 4
+CHAR_RATIO = 5
 
 class FONT():
     def __init__(self, fname):
@@ -78,7 +78,7 @@ def generateAllFonts():
             if not os.path.isdir(filename):
                 dir_name = os.path.join(FONT_DIR, os.path.splitext(fname)[0])            
                 if os.path.splitext(fname)[1].upper() == FONT_EXT:
-                    generateFont(filename, dir_name)
+                    generateFont(filename)
 
 if __name__ == "__main__":
 
