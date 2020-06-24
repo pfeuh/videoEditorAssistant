@@ -12,6 +12,7 @@ OUTPUT_DIR = "./out/"
 FRM_EXT = ".png"
 VIDEO_EXT = ".mp4"
 NB_GLYPHES = 128
+FONT_DIR = "./font/"
 
 #collecting arguments
 DEBUG = "-debug" in sys.argv
@@ -106,8 +107,9 @@ class SHEET():
     def show(self):
         self.__img.show()
         
-    def save(self, fname):
-        self.__img.save(fname, "PNG")
+    def save(self, fname, nb_frames=1):
+        for cnt in range(nb_frames):
+            self.__img.save(fname, "PNG")
 
     def drawEllipse(self, x1, y1, x2, y2, color=None, **kwds):
         if color == None:color = self.__fg
@@ -171,9 +173,14 @@ class COUNTER:
 
 class FONT():
     def __init__(self, fname):
+        fname = FONT_DIR + fname
         self.__charset=[]
         for index in range(NB_GLYPHES):
-            self.__charset.append(loadImage(fname + "/%03d.png"%index))
+            iname = fname + "/%03d.png"%index
+            if os.path.exists(iname):
+                self.__charset.append(loadImage(iname))
+            else:
+                self.__charset.append(loadImage("./ressource/defaultGlyphe.png"))
     
     def getGlyphe(self, index):
         return self.__charset[index]
@@ -211,17 +218,17 @@ if __name__ == "__main__":
 
     console = CONSOLE()
     counter = COUNTER()
-    font = FONT("./font/font_arex")
+    font = FONT("arex")
 
     for car in "Pfeuh proundly presents\n\nFUSEE INTERPLANETAIRE":
-        sheet = SHEET(bg=SHEET.TRANSPARENT, fg=ATARI_WHITE, console = console)
+        sheet = SHEET(bg=ATARI_BLUE, fg=ATARI_WHITE, console = console)
         sheet.initConsole(font=font)
         sheet.write(car)
         sheet.drawText()
-        for x in range(5):
-            sheet.save("./in/test_%04d.png"%counter.get())
+        sheet.save("./in/test_%04d.png"%counter.get())
     
-    picToVideo("./in/test_%04d.png", "./out/text.mp4")
+    sheet.show()
+    #~ picToVideo("./in/test_%04d.png", "./out/text.mp4")
     
     
     

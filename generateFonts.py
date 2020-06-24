@@ -4,6 +4,13 @@
 from PILdrawer import *
 import os
 
+ERROR_TEXT = """Bad parameter(s)
+-all   : rebuild all application's fonts
+-iname : builds and adds the font -iname
+-oname : (optional) change name of the new built font
+"""
+
+FONT_DIR = "./font/"
 FONT_FILE_SIZE = 1024
 FONT_EXT = ".FNT"
 NB_CHARS = 128
@@ -13,6 +20,8 @@ CHAR_RATIO = 4
 
 class FONT():
     def __init__(self, fname):
+        if not os.path.exists(fname):
+            raise Exception("file %s not found!"%fname, 2)
         self.__font = open(fname, "rb").read(-1)
         self.__fname = fname
         if len(self.__font) != FONT_FILE_SIZE:
@@ -51,22 +60,43 @@ class FONT():
                         self.drawPixel(sheet, x, y, CHAR_RATIO)
             fn, ext = os.path.splitext(self.__fname)
             char_fname = os.path.join(folder, "%03d"%carnum + ".png")
-            sys.stdout.write(char_fname)
-            sys.stdout.write("\n")
             sheet.save(char_fname)
 
-if __name__ == "__main__":
-    
-    font_dir = "./font/"
+def generateFont(fname, font_name=None):
+    if font_name == None:
+        font_dir_name = FONT_DIR + os.path.splitext(os.path.basename(fname))[0]
+    else:
+        font_dir_name = FONT_DIR + font_name
+    sys.stdout.write("%s -> %s\n"%(fname, font_dir_name))
+    font = FONT(fname)
+    font.createGlyphes(font_dir_name)
 
-    for fname in os.listdir(font_dir):
-        filename = os.path.join(font_dir, fname)
+def generateAllFonts():
+    for fname in os.listdir(FONT_DIR):
+        filename = os.path.join(FONT_DIR, fname)
         if os.path.isfile(filename):
             if not os.path.isdir(filename):
-                dir_name = os.path.join(font_dir, "font_" + os.path.splitext(fname)[0])            
+                dir_name = os.path.join(FONT_DIR, os.path.splitext(fname)[0])            
                 if os.path.splitext(fname)[1].upper() == FONT_EXT:
-                    sys.stdout.write("%s -> %s\n"%(fname, dir_name))
-                    font = FONT(filename)
-                    font.createGlyphes(dir_name)
+                    generateFont(filename, dir_name)
 
+if __name__ == "__main__":
 
+    iname = None
+    oname = None
+
+    for index, arg in enumerate(sys.argv):
+        if arg == "-all":
+            generateAllFonts()
+            sys.exit(0)
+        elif arg == "-iname":
+            iname = sys.argv[index + 1]
+        elif arg == "-oname":
+            oname = sys.argv[index + 1]
+            
+    if iname != None:
+        generateFont(iname, oname)
+        sys.exit(0)
+    else:
+        sys.stderr.write(ERROR_TEXT)
+        sys.exit(1)
