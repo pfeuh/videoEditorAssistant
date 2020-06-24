@@ -20,7 +20,7 @@ def createImage(sheet, fname_gen, frame_per_character):
     if not fname_gen.getCurrentIndex() % 25:
         sys.stdout.write('\n')
 
-def generateVideoText(text, font_name="ascii8", frame_per_character=5, preframes=0, postframes=50, bg=ATARI_BLUE, fg=ATARI_WHITE, border=False):
+def generateVideoText(text, font_name="ascii8", frame_per_character=5, preframes=0, postframes=50, bg=ATARI_BLUE, fg=ATARI_WHITE, border=False, sound=False):
     vname = "./out/text.mp4"
     console = CONSOLE()
     pattern = "./in/OSVT_%04d.png"
@@ -28,6 +28,7 @@ def generateVideoText(text, font_name="ascii8", frame_per_character=5, preframes
     font = FONT(font_name)
     size = len(text) * frame_per_character + preframes + postframes
     sys.stdout.write("Starting to generate %s size:%d frames\n"%(vname, size))
+    clicks = []
     
     if preframes != 0:
         for cnt in range(preframes):
@@ -36,10 +37,11 @@ def generateVideoText(text, font_name="ascii8", frame_per_character=5, preframes
             createImage(sheet, fname_gen, preframes)
 
     for car in text:
+        clicks.append(fname_gen.getCurrentIndex())
+        console.write(car)
         for cnt in range(frame_per_character):
             sheet = SHEET(bg=bg, fg=fg, console=console)
             sheet.initConsole(font=font, border=border)
-            sheet.write(car)
             createImage(sheet, fname_gen, frame_per_character)
     
     if postframes != 0:
@@ -47,15 +49,17 @@ def generateVideoText(text, font_name="ascii8", frame_per_character=5, preframes
             sheet = SHEET(bg=bg, fg=fg, console=console)
             sheet.initConsole(font=font, border=border)
             createImage(sheet, fname_gen, postframes)
+            
         
     #~ picToVideo(name_gen.getPattern(), vname)
+    return clicks
 
 if __name__ == "__main__":
 
     deleteInputBuffer()
-    text = "Pfeuh proundly presents\n\nFUSEE INTERPLANETAIRE"
-    #~ text = "\n\n\n\n\n\n\n\n\n\nPfeuh proundly presents\n\nFUSEE INTERPLANETAIRE"
+    #~ text = "Pfeuh proundly presents\n\nFUSEE INTERPLANETAIRE"
+    text = "\n\n\n\n\n\n\n\n\n\nPfeuh proundly presents\n\nFUSEE INTERPLANETAIRE"
     #~ generateVideoText(text, font_name="ascii8", frame_per_character=1, preframes=0, postframes=2, border=True)
-    generateVideoText(text, font_name="ascii8", frame_per_character=1, preframes=0, postframes=2)
+    print generateVideoText(text, font_name="ascii8", frame_per_character=5, preframes=0, postframes=2)
     #~ generateVideoText(text)
-    #~ picToVideo("./in/OSVT_%04d.png", "./out/text.mp4")
+    picToVideo("./in/OSVT_%04d.png", "./out/text.mp4")
