@@ -45,7 +45,7 @@ class LINE():
                 text = text.replace(">", EMPTY)
                 self.__mode = FORMAT_RIGHT
 
-            if self.__mode == FORMAT_LEFT:
+            if self.__mode in (FORMAT_LEFT, FORMAT_JUSTIFY):
                 text = text.replace(CHAR_TAB, CHAR_SPACE + PATTERN_TAB + CHAR_SPACE)
             else:
                 text = text.replace(CHAR_TAB, EMPTY)
@@ -120,24 +120,28 @@ class LINE():
             out_text = self.adjustCenter(text, cols)
         elif mode == FORMAT_JUSTIFY:
             out_text = self.adjustJustify(text, cols)
+        else:
+            raise Exception("Unexpected internal error!\nmode = %d"%str(mode))
             
         if len(out_text) != cols:
             raise Exception("Unexpected bad size for string\n<%s>\n expected %d got %s"%(out_text, cols, len(out_text)))
         return out_text
 
     def getFormatedText(self, cols=SCREEN_COLS, tab=SCREEN_TAB):
-        mode = self.__mode
         formated_text = EMPTY
 
         current_line = EMPTY
         last_wnum = len(self.__words) -1
         for wnum, word in enumerate(self.__words):
+            mode = self.__mode
             if current_line != EMPTY:
                 space = CHAR_SPACE
             else:
                 space = EMPTY
 
             if len(word) + len(current_line) + len(space) > cols:
+                if wnum == last_wnum:
+                    mode = FORMAT_LEFT
                 formated_text += self.adjustLineSize(current_line, cols, mode, tab)
                 current_line = word
             else:
@@ -145,9 +149,8 @@ class LINE():
 
         if current_line != EMPTY:
             mode = self.__mode
-            if self.__mode == PATTERN_JUSTIFIED:
-                mode = PATTERN_LEFT
-                print "last line", words
+            if self.__mode == FORMAT_JUSTIFY:
+                mode = FORMAT_LEFT
             formated_text += self.adjustLineSize(current_line, cols, mode, tab)
 
         if formated_text == EMPTY:
@@ -185,7 +188,7 @@ class SCREEN_BUFFER():
         for line in lines:
             self.__lines.append(LINE(line))
 
-    def getFormatedTtext(self):
+    def getFormatedText(self):
         screen_buffer = EMPTY
         for line in self.__lines:
             screen_buffer += line.getFormatedText(self.__cols, self.__tab)
@@ -197,7 +200,7 @@ class SCREEN_BUFFER():
     def __str__(self):
         text = EMPTY
         line_num = 0
-        screen_text = self.getFormatedTtext()
+        screen_text = self.getFormatedText()
         
         while 1:
             line = screen_text[line_num * self.__cols:(line_num + 1) * self.__cols]
@@ -260,6 +263,10 @@ blabla
 \t\t\t*
 \t\t\t\t*
 \t\t\t\t\t*
+\t\t\t\t\t*
+\t\t\t\t\t\t*
+\t\t\t\t\t\t\t*
+\t\t\t\t\t\t\t\t*
 
 ><V 2.0 c.2020"""
 
